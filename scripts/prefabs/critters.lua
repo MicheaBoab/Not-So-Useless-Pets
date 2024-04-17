@@ -58,11 +58,11 @@ local function oneat(inst, food)
 		end)
 	elseif inst:HasTag("trait_playful") then --- 爱玩特质
 		print("加速中")
-		owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed * 2.0
-		owner.components.locomotor.runspeed = owner.components.locomotor.runspeed * 2.0
+		owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed * 1.1
+		owner.components.locomotor.runspeed = owner.components.locomotor.runspeed * 1.1
 		owner:DoTaskInTime(bufftimer, function() 
-			owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed / 2.0  
-			owner.components.locomotor.runspeed = owner.components.locomotor.runspeed / 2.0
+			owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed / 1.1 
+			owner.components.locomotor.runspeed = owner.components.locomotor.runspeed / 1.1
 		end)
 	elseif inst:HasTag("trait_wellfed") then --- 吃饱饱特质  有bug
 		print("脑残回复中")
