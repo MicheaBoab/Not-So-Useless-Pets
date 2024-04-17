@@ -1,7 +1,7 @@
 name = "Not So Useless Pet"
 description = "Make those pet not so useless and give those crittersbrain property some usefulness"
 author = "MicheaBoab"
-version = "1.0"
+version = "1.1"
 
 api_version = 10
 dst_compatible = true
