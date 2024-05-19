@@ -44,7 +44,7 @@ local function oneat(inst, food)
 	-- !!!为什么是这么几个公式不重要!!!
 	if inst:HasTag("useless") then
 		local owner = inst.components.follower.leader
-		local bufftimer = 4 * TUNING.SEG_TIME * food_freshness
+		local bufftimer = 8 * TUNING.SEG_TIME * food_freshness
 		if inst:HasTag("trait_combat")  then --- 斗志特质
 			inst:RemoveTag("useless")
 			--	1	1.1
