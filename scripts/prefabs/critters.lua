@@ -35,42 +35,79 @@ local function oneat(inst, food)
 		end
 	end
 
-	local owner = inst.components.follower.leader
-	local bufftimer = 240
-
-	if inst:HasTag("trait_combat")  then --- 斗志特质
-		print("你被强化了,快去送 !!! ")
-		if owner.components.combat.damagemultiplier then
-			owner.components.combat.damagemultiplier = owner.components.combat.damagemultiplier * 1.5
-		else
-			owner.components.combat.damagemultiplier = 1.5
+	local food_quality = food.prefab == inst.favoritefood and 5				-- food from adopt recipe
+								or food:HasTag("preparedfood") and 4		-- crockpot food
+								or 1										-- any other food
+	local food_freshness = food:HasTag("fresh") and 1
+								or food:HasTag("stale") and 0.5
+								or 0.1
+	-- !!!为什么是这么几个公式不重要!!!
+	if inst:HasTag("useless") then
+		local owner = inst.components.follower.leader
+		local bufftimer = 4 * TUNING.SEG_TIME * food_freshness
+		if inst:HasTag("trait_combat")  then --- 斗志特质
+			inst:RemoveTag("useless")
+			--	1	1.1
+			--	4	1.2
+			--	5	1.25
+			local multiplier = (food_quality * (food_quality + 3) + 260) / 240
+			
+			if owner.components.combat.damagemultiplier then
+				owner.components.combat.damagemultiplier = owner.components.combat.damagemultiplier * multiplier
+			else
+				owner.components.combat.damagemultiplier = multiplier
+			end
+			
+			owner:DoTaskInTime(bufftimer, function() 
+				owner.components.combat.damagemultiplier = owner.components.combat.damagemultiplier / multiplier
+				inst:AddTag("useless")
+			end)
+		elseif inst:HasTag("trait_crafty") then --- 聪明特质
+			inst:RemoveTag("useless")
+			--	1	1
+			--	4	2
+			--	5	3
+			local bonus = (food_quality * (food_quality - 3) + 8) / 6
+			if owner.components.plannardefense ~= nil then
+				owner.components.planardefense:AddBonus(owner, bonus, "pet_crafty_defense")
+			end
+			
+			owner:DoTaskInTime(bufftimer, function() 
+				owner.components.planardefense:RemoveBonus(owner, "pet_crafty_defense")
+				inst:AddTag("useless")
+			end)
+		elseif inst:HasTag("trait_playful") then --- 爱玩特质
+			inst:RemoveTag("useless")
+			--	1	1.1
+			--	4	1.2
+			--	5	1.25
+			local multiplier = (food_quality * (food_quality + 3) + 260) / 240
+			owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed * multiplier
+			owner.components.locomotor.runspeed = owner.components.locomotor.runspeed * multiplier
+			
+			owner:DoTaskInTime(bufftimer, function() 
+				owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed / multiplier
+				owner.components.locomotor.runspeed = owner.components.locomotor.runspeed / multiplier
+				inst:AddTag("useless")
+			end)
+		elseif inst:HasTag("trait_wellfed") then --- 吃饱饱特质
+			inst:RemoveTag("useless")
+			--	1	6.25/min
+			--	4	10/min
+			--	5	25/min
+			inst:AddComponent("sanityaura")			
+			if food_quality == 1 then
+				inst.components.sanityaura.aura = TUNING.SANITYAURA_TINY
+			elseif food_quality == 4 then
+				inst.components.sanityaura.aura = TUNING.SANITYAURA_SMALL_TINY
+			elseif food_quality == 5 then
+				inst.components.sanityaura.aura = TUNING.SANITYAURA_SMALL
+			end
+			inst:DoTaskInTime(bufftimer, function() 
+				inst:RemoveComponent("sanityaura")
+				inst:AddTag("useless")
+			end)
 		end
-		owner:DoTaskInTime(bufftimer, function() 
-			owner.components.combat.damagemultiplier = owner.components.combat.damagemultiplier / 1.5 
-		end)
-	elseif inst:HasTag("trait_crafty") then --- 聪明特质
-		print("真伤减免")
-		if owner.componets.plannardefense ~= nil then
-			owner.components.planardefense:AddBonus(owner, 3, "pet_crafty_defense")
-		end
-		owner:DoTaskInTime(bufftimer, function() 
-			owner.components.planardefense:RemoveBonus(owner, "pet_crafty_defense")
-		end)
-	elseif inst:HasTag("trait_playful") then --- 爱玩特质
-		print("加速中")
-		owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed * 1.1
-		owner.components.locomotor.runspeed = owner.components.locomotor.runspeed * 1.1
-		owner:DoTaskInTime(bufftimer, function() 
-			owner.components.locomotor.walkspeed = owner.components.locomotor.walkspeed / 1.1 
-			owner.components.locomotor.runspeed = owner.components.locomotor.runspeed / 1.1
-		end)
-	elseif inst:HasTag("trait_wellfed") then --- 吃饱饱特质  有bug
-		print("脑残回复中")
-		inst:AddComponent("sanityaura")
-		inst.components.sanityaura.aura = TUNING.SANITYAURA_TINY
-		inst:DoTaskInTime(bufftimer, function() 
-			inst:RemoveComponent("sanityaura") 
-		end)
 	end
 
     inst.components.perishable:SetPercent(1)
@@ -206,6 +243,7 @@ local function MakeCritter(name, animname, face, diet, flying, data, prefabs)
         inst:AddTag("noauradamage")
         inst:AddTag("small_livestock")
         inst:AddTag("NOBLOCK")
+		inst:AddTag("useless")
 
         if data ~= nil and data.flyingsoundloop ~= nil then
             inst.SoundEmitter:PlaySound(data.flyingsoundloop, "flying")
